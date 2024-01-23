@@ -3,8 +3,6 @@ from jax import grad, jit
 
 """
 
-
-
 A PID Controller works by controlling an output to bring a process value to a desired set point. 
 It does this by calculating an error values as the difference between a desired setpoint and a measured process variable. 
 
