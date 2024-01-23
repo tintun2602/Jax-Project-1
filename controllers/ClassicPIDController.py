@@ -1,5 +1,6 @@
 import jax.numpy as np
 from jax import grad, jit
+import Controller as controller
 
 """
 
@@ -11,12 +12,6 @@ The controller attempts to minimize the error over time by adjusting a control v
 """
 
 class ClassicPIDController: 
-
-
-    """
-    
-    
-    """
 
     def __init__(self, Kp: float, Ki: float, Kd: float):
         
