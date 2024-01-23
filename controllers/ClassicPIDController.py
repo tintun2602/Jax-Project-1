@@ -10,7 +10,7 @@ The controller then applies a correction based on proportional integral, and der
 The controller attempts to minimize the error over time by adjusting a control variable to a new value determined by a weighted sum of control terms 
 """
 
-class PIDController: 
+class ClassicPIDController: 
 
 
     """
