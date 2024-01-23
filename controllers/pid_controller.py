@@ -14,6 +14,12 @@ The controller attempts to minimize the error over time by adjusting a control v
 
 class PIDController: 
 
+
+    """
+    
+    
+    """
+
     def __init__(self, Kp: float, Ki: float, Kd: float):
         
         """
@@ -46,8 +52,8 @@ class PIDController:
         self.previos_error = error
         return output
     
-
-    @jit # JIT - This will compile 'compute_gradient'
+    
+    @jit # JIT decorator - This will compile 'compute_gradient'
     def compute_gradient(self, setpoint, pv, dt):
         return grad(self.update)(setpoint, pv, dt)
     

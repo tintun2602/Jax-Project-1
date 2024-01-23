@@ -1,0 +1,2 @@
+class Bathub: 
+    pass
