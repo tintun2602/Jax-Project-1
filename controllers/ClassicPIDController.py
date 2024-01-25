@@ -1,57 +1,43 @@
 import jax.numpy as np
 from jax import grad, jit
-import Controller as controller
+from Controller import Controller
 
-"""
+class ClassicPIDController(Controller): 
+    def __init__(self, kp, ki, kd):
+        super().__init__()  # Initialize the base class
+        self.kp = kp
+        self.ki = ki
+        self.kd = kd
+        self.integral_sum = 0
+        self.previous_error = 0
 
-A PID Controller works by controlling an output to bring a process value to a desired set point. 
-It does this by calculating an error values as the difference between a desired setpoint and a measured process variable. 
-
-The controller then applies a correction based on proportional integral, and derivative terms.
-The controller attempts to minimize the error over time by adjusting a control variable to a new value determined by a weighted sum of control terms 
-"""
-
-class ClassicPIDController: 
-
-    def __init__(self, Kp: float, Ki: float, Kd: float):
+    def compute_control_signal(self, error, dt):
+        if dt == 0: 
+            raise ValueError("Delta time cannot be zero")
         
-        """
+        # Calculate the derivative of the error
+        derivative_error = (error - self.previous_error) / dt
         
-        Parameters:
-
-        Kp : Proportional gain.
-        Ki : Integration gain.
-        Kd : Derivative gain.
+        # Calculate the integral of the error
+        self.integral_sum += error * dt
         
-        """
+        # PID formula: output = P + I + D
+        control_signal = (self.kp * error) + (self.ki * self.integral_sum) + (self.kd * derivative_error)
         
-        self.Kp = Kp
-        self.Ki = Ki
-        self.Kd = Kd
-        self.previos_error = 0
-        self.integral = 0
-
+        # Update the previous error for the next iteration
+        self.previous_error = error
+        
+        return control_signal
 
     def update(self, setpoint, pv, dt):
-        """
-        
-        dt: Delta Time represents the time interval between the current and previous control action
-        
-        """
+        # Compute error and call compute_control_signal to get the PID output
         error = setpoint - pv
-        self.integral += error * dt
-        derivative = (error - self.previos_error) / dt
-        output = self.Kp * error + self.Ki * self.integral + self.Kd * derivative
-        self.previos_error = error
+        output = self.compute_control_signal(error, dt)
         return output
-    
-    
-    @jit # JIT decorator - This will compile 'compute_gradient'
-    def compute_gradient(self, setpoint, pv, dt):
-        return grad(self.update)(setpoint, pv, dt)
-    
 
+    def reset(self): 
+        # Reset the controller's internal state
+        self.integral_sum = 0
+        self.previous_error = 0
 
-
-
-
+  
