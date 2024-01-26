@@ -1,4 +1,3 @@
-import math
 import jax.numpy as jnp
 
 
@@ -20,12 +19,12 @@ class BathubPlant:
         """
         self.g = 9.8
 
-        self.A = A # constant does not change
-        self.C = C # constant does not change
-        self.H = H_0
-        self.B = A * H_0    # Initial volume of the bathtub, kanskje dette er unødvendig?, kan bli evt. brukt til å plotte.
-        self.V = jnp.sqrt(2 * self.g * self.H)
-        self.Q = self.V * self.C  # skal dette også kankje være i timestep funksjonen??
+        self.A = A  # constant does not change
+        self.C = C  # constant does not change
+        self.H = H_0  # Initial height of the water in the bathtub
+        self.B = A * H_0  # Initial volume of the bathtub
+        self.V = jnp.sqrt(2 * self.g * self.H)  # Initial velocity of the bathtub
+        self.Q = self.V * self.C  # Initial flow rate of the drain in the bathtub
 
     def timestep(self, U, D):
         """
@@ -46,11 +45,3 @@ class BathubPlant:
         # Updating the volume and the height of the water in bathtub for every timestep (1 sek)
         self.H = self.H + delta_H
         self.B = self.B + delta_B
-
-
-if __name__ == '__main__':
-    bathtub_plant = BathubPlant(10, 0.01, 200)
-    for _ in range(1_00):
-        bathtub_plant.timestep(0.01, 0.003)
-        print(bathtub_plant.H)
-
