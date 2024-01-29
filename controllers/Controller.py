@@ -31,9 +31,4 @@ class Controller(ABC):
         """
         pass
 
-    @abstractmethod
-    def reset(self):
-        """
-        Reset the controller's internal state variables to their initial values.
-        """
-        pass
+

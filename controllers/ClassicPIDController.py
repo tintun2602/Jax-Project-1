@@ -35,11 +35,5 @@ class ClassicPIDController(Controller):
         # Compute error and call compute_control_signal to get the PID output
         error = setpoint - pv
         output = self.compute_control_signal(error, dt)
-        return output
+        return error, output
 
-    def reset(self): 
-        # Reset the controller's internal state
-        self.integral_sum = 0
-        self.previous_error = 0
-
-  
