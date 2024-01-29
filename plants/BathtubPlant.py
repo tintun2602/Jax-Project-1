@@ -1,4 +1,4 @@
-import BasePlant
+from plants.BasePlant import BasePlant
 import jax.numpy as jnp
 
 

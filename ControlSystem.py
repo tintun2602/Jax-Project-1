@@ -25,7 +25,12 @@ class ControlSystem:
         kp = []
 
         for epoch in range(epochs):
+            # resetting the plant to its initial state.
+            self.plant.reset()
+
+            # initializing error history
             error_history = []
+
             for timestep in range(timesteps):
                 if timestep == 0:
                     continue
