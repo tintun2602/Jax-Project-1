@@ -1,8 +1,10 @@
 import jax.numpy as np
 from jax import grad, jit
-from Controller import Controller
 
-class ClassicPIDController(Controller): 
+from controllers.Controller import Controller
+
+
+class ClassicPIDController(Controller):
     def __init__(self, kp, ki, kd):
         super().__init__()  # Initialize the base class
         self.kp = kp
