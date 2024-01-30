@@ -11,7 +11,7 @@ class BathubPlant(BasePlant):
         :param H_O: Initial height of the water in the bathtub
 
         self.A = Constant cross-sectional area of the bathtub from top to bottom
-        self.C = Constant cross-sectional area of th drain
+        self.C = Constant cross-sectional area of the drain
         self.H = Height of water in the bathtub
         self.B = Volume of the bathtub
         self.V = Velocity of water exiting through the drain

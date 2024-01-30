@@ -1,6 +1,7 @@
 import numpy as np
-import jax.numpy as jnp 
+import jax.numpy as jnp
 import matplotlib.pyplot as plt
+
 
 def disturbance_generator(x1=-1, x2=1):
     """
@@ -20,6 +21,9 @@ class ControlSystem:
 
     def run_control_loop(self, setpoint, epochs, timesteps):
         mse_history = []
+
+        # initializing water height history
+        water_height_history = []
         ki = []
         kd = []
         kp = []
@@ -41,19 +45,23 @@ class ControlSystem:
 
                 self.plant.update(control_signal, disturbance)
                 error_history.append(error)
-                
+
                 # storing the parameters
                 ki.append(self.controller.ki)
                 kd.append(self.controller.kd)
                 kp.append(self.controller.kp)
 
             mse = np.mean(np.square(np.array(error_history)))
+
+            # adding data points to the history
             mse_history.append(mse)
+            water_height_history.append(self.plant.state)
 
-        self.visualizePlot(ki, kd, kp, mse_history)
+        self.visualizePlot(ki, kd, kp, mse_history, water_height_history)
 
-    def visualizePlot(self, ki, kd, kp, mse_history):
+    def visualizePlot(self, ki, kd, kp, mse_history, water_height_history):
         mse_np = jnp.array(mse_history)
+        water_height_history_np = jnp.array(water_height_history)
 
         # Visualization
         plt.figure(figsize=(18, 6))
@@ -68,16 +76,14 @@ class ControlSystem:
         plt.ylim(0, 1)
         plt.xlim(0, 100)
 
-    # Plotting the water level in the bathtub
-
+        # Plotting the water level in the bathtub
         plt.subplot(1, 3, 2)
-        # plt.plot(self.plant.state_history) 
+        plt.plot(water_height_history_np)
         plt.xlabel('Time Steps')
         plt.ylabel('Water Level')
         plt.title('Water Level Over Time')
         plt.ylim(0, 100)
         plt.xlim(0, 100)
-
 
         plt.subplot(1, 3, 3)
         plt.plot(ki, label='ki')
@@ -92,7 +98,3 @@ class ControlSystem:
 
         plt.tight_layout()
         plt.show()
-
-
-    
-        
