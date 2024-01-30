@@ -3,43 +3,8 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import random
 
-from plants.BathtubPlant import BathubPlant
 
-
-
-class ClassicPIDController():
-    def __init__(self, kp, ki, kd):
-        super().__init__()  # Initialize the base class
-        self.kp = kp
-        self.ki = ki
-        self.kd = kd
-        self.integral_sum = 0
-        self.previous_error = 0
-
-    def compute_control_signal(self, error, dt):
-        if dt == 0: 
-            raise ValueError("Delta time cannot be zero")
-        
-        # Calculate the derivative of the error
-        derivative_error = (error - self.previous_error) / dt
-        
-        # Calculate the integral of the error
-        self.integral_sum += error * dt
-        
-        # PID formula: output = P + I + D
-        control_signal = (self.kp * error) + (self.ki * self.integral_sum) + (self.kd * derivative_error)
-        
-        # Update the previous error for the next iteration
-        self.previous_error = error
-        
-        return control_signal
-
-    def update(self, setpoint, pv, dt):
-        # Compute error and call compute_control_signal to get the PID output
-        error = setpoint - pv
-        output = self.compute_control_signal(error, dt)
-        return error, output
-
+# 
 
 def disturbance_generator(x1=-1, x2=1):
     """
@@ -50,6 +15,22 @@ def disturbance_generator(x1=-1, x2=1):
     """ 
 
     return np.random.uniform(x1, x2)
+
+
+# TODO: Implement compute_gradients function in the ControlSystem class
+
+def compute_gradients(self, error_history, ki_history, kd_history, kp_history):
+    num_timesteps = len(error_history)
+    dMSE_dki = 2 * np.sum(np.array(error_history) * np.array(ki_history)) / num_timesteps
+    dMSE_dkd = 2 * np.sum(np.array(error_history) * np.array(kd_history)) / num_timesteps
+    dMSE_dkp = 2 * np.sum(np.array(error_history) * np.array(kp_history)) / num_timesteps
+    return {'ki': dMSE_dki, 'kd': dMSE_dkd, 'kp': dMSE_dkp}
+
+
+def update_controller_params(self, gradients, learning_rate=0.1):
+    self.controller.ki += learning_rate * gradients['ki']
+    self.controller.kd += learning_rate * gradients['kd']
+    self.controller.kp += learning_rate * gradients['kp']
 
 
 class ControlSystem:
@@ -115,31 +96,4 @@ class ControlSystem:
         plt.tight_layout()
         plt.show()
 
-def main():
-    # creating an instance of the bathtub plant
-    cross_sectional_area_of_bathtub = 10
-    cross_sectional_area_of_bathtub_drain = 0.01
-    initial_and_goal_height_of_water_in_bathtub = 100
 
-    bathtub_plant = BathubPlant(
-        cross_sectional_area_of_bathtub,
-        cross_sectional_area_of_bathtub_drain,
-        initial_and_goal_height_of_water_in_bathtub
-    )
-
-    # creating an instance of the classical_pid_controller
-    classical_pid = ClassicPIDController(kp=1.0, ki=0.1, kd=0.01)
-
-    controll_system = ControlSystem(classical_pid, bathtub_plant)
-
-    epochs = 100
-    timesteps = 100
-
-    controll_system.run_control_loop(
-        initial_and_goal_height_of_water_in_bathtub,
-        epochs,
-        timesteps
-    )
-
-if __name__ == "__main__":
-    main()

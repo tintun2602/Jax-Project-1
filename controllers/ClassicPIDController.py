@@ -4,7 +4,7 @@ from jax import grad, jit
 from controllers.Controller import Controller
 
 
-class ClassicPIDController(Controller):
+class ClassicPIDController():
     def __init__(self, kp, ki, kd):
         super().__init__()  # Initialize the base class
         self.kp = kp
@@ -36,4 +36,3 @@ class ClassicPIDController(Controller):
         error = setpoint - pv
         output = self.compute_control_signal(error, dt)
         return error, output
-

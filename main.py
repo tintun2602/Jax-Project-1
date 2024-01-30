@@ -22,7 +22,6 @@ def main():
 
     controll_system = ControlSystem(classical_pid, bathtub_plant)
 
-    # What are the different parameters??
     epochs = 100
     timesteps = 100
 
@@ -31,8 +30,6 @@ def main():
         epochs,
         timesteps
     )
-
-
 
 if __name__ == "__main__":
     main()
