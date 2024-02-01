@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from bathtub import bathtub
-
+from jax import jit, grad
 
 
 class PID:
@@ -58,6 +58,30 @@ class PID:
         return P + (self.Ki * self.I) + (self.Kd * D)      
 
 
+    def objective(self, setpoint, actual):
+        """
+        Calculates the mean sqared error
+        
+        :param: 
+        """
+        error = setpoint - actual
+        return np.mean(error**2)
+        
+    def update_k_values(self, loss_grad, learning_rate):
+        """Updates PID gains using gradient descent."""
+
+        # Unpack gradients
+        Kp_grad, Ki_grad, Kd_grad = loss_grad
+
+        # Update gains with gradient descent
+        self.Kp -= learning_rate * Kp_grad
+        self.Ki -= learning_rate * Ki_grad
+        self.Kd -= learning_rate * Kd_grad
+
+        return Kp, Ki, Kd
+
+    
+
     def visualizePlot(self, output, water_height_history, controller_parameters):
         Kp, Ki, Kd, dt = controller_parameters
         
@@ -80,11 +104,12 @@ class PID:
         axs[1].set_title('Water Height')
         axs[1].grid(True)
 
-
-
-
         plt.tight_layout()
         plt.show()
+
+
+
+
 
 def disturbance_generator(x1=-0.01, x2=0.01):
     return np.random.uniform(x1, x2)
@@ -98,24 +123,76 @@ if __name__ == "__main__":
     Kd = 1.3    # demper ossilasjon (svingnigner fra v til h)
     time_sample = 1
 
-    bathtub_plant = bathtub(A = 10, C = 0.1, H_0 = goal_height)
+    epochs = 100
+
+    
     pid = PID(Kp = Kp, Ki = Ki, Kd = Kd, setpoint = goal_height, dt = time_sample)
 
     water_height_history = []
     controller_output_history = []
 
-    for dt in range(100):
-        water_height_history.append(bathtub_plant.state)
 
-        current_height = bathtub_plant.state
-        controller_output = pid.update(current_value=current_height)
-        bathtub_plant.update(U = controller_output, D = disturbance_generator()) 
+    # Optimization loop
+    for _ in range(epochs):
+        bathtub_plant = bathtub(A = 10, C = 0.1, H_0 = goal_height)
+        
+        for dt in range(100):
+            water_height_history.append(bathtub_plant.state)
 
-        controller_output_history.append(controller_output)
+            current_height = bathtub_plant.state
+            controller_output = pid.update(current_value=current_height)
+            bathtub_plant.update(U = controller_output, D = disturbance_generator()) 
 
-    pid.update(0.5)
+            controller_output_history.append(controller_output)
+    
+    loss = self.objective()
+
     pid.visualizePlot(
         output = controller_output_history,
         water_height_history = water_height_history,
         controller_parameters=(Kp, Ki, Kd, time_sample))
+
+
+
+
+# TODO: Create optimization loop -  simple implementation is already done 
+    # - > Starting from for _ in range(epochs)
+
+
+# # Optimization loop
+# for _ in range(num_iterations):
+#     # Simulate with current gains
+#     H_sim = ...  # Initialize H_sim
+#     H_prev = H_sim  # Initialize previous state for derivative
+#     for t in range(time_horizon):
+#         U = controller(H_sim, H_desired, Kp, Ki, Kd)
+#         H_sim = step(H_sim, U, D[t])
+#         H_prev = H_sim  # Update previous state for derivative
+    
+#     # Evaluate objective function
+#     loss = objective(H_sim, H_desired)
+    
+#     # Calculate gradients with JAX
+#     loss_grad = grad(objective)(H_sim, H_desired)
+    
+#     # Update gains using optimizer (replace with your chosen algorithm)
+#     Kp, Ki, Kd = update_gains(Kp, Ki, Kd, loss_grad, learning_rate)
+
+
+
+
+# # def loss_grad(self, setpoint, actual):
+# #         """Calculates the gradient of the loss function with respect to the PID gains."""
+
+# #         # Calculate error
+# #         error = setpoint - actual
+
+# #         # Calculate gradients
+# #         Kp_grad = np.mean(-2 * error * self.P)
+# #         Ki_grad = np.mean(-2 * error * self.I)
+# #         Kd_grad = np.mean(-2 * error * self.D)
+
+# #         return Kp_grad, Ki_grad, Kd_grad
+
+
 
