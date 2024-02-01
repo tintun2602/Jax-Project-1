@@ -1,8 +1,8 @@
-from plants.BasePlant import BasePlant
+import BasePlant
 import jax.numpy as jnp
 
 
-class BathubPlant(BasePlant):
+class bathtub():
     def __init__(self, A, C, H_0):
         """
         FOR EVERY TIMESTEP

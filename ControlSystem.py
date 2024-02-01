@@ -77,6 +77,7 @@ class ControlSystem:
 
         self.visualizePlot(ki, kd, kp, mse_history)
 
+
     def visualizePlot(self, kp, ki, kd, mse_history):
         mse_np = np.array(mse_history)
         fig, axs = plt.subplots(1, 2, figsize=(12, 5))
