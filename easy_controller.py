@@ -57,33 +57,6 @@ class PID:
         self.last_error = error
         return P + (self.Ki * self.I) + (self.Kd * D)      
 
-    def update2(self, current_value):
-        """
-        Denne metoden oppdaterer ikke PID variablene
-        Calculates and returns the PID output based on the current value.
-        """
-
-        # Calculate the error
-        error = self.setpoint - current_value
-
-        # Calculate the proportional term
-        proportional = self.Kp * error
-
-        # Calculate the integral term
-        self.integral += error * self.sample_time
-        integral = self.Ki * self.integral
-
-        # Calculate the derivative term (using a simple approximation)
-        derivative = self.Kd * (error - self.last_error) / self.sample_time
-
-        # Update the last error for the next iteration
-        self.last_error = error
-
-        # Calculate the total PID output
-        output = proportional + integral + derivative
-
-        return output
-
 
     def visualizePlot(self, output, water_height_history, controller_parameters):
         Kp, Ki, Kd, dt = controller_parameters
