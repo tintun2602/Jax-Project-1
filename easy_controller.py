@@ -34,9 +34,7 @@ class PID:
         self.Ki = Ki
         self.Kd = Kd
 
-        self.P = 0
         self.I = 0
-        self.D = 0
 
         self.setpoint = setpoint
         self.dt = dt
@@ -53,11 +51,11 @@ class PID:
         """
         
         error = self.setpoint - current_value 
-        self.P = self.Kp * error
+        P = self.Kp * error
         self.I += error * self.dt
-        self.D = (error - self.last_error) / self.dt
+        D = (error - self.last_error) / self.dt
         self.last_error = error
-        return self.P + (self.Ki * self.I) + (self.Kd * self.D)      
+        return P + (self.Ki * self.I) + (self.Kd * D)      
 
     def update2(self, current_value):
         """
@@ -133,7 +131,7 @@ if __name__ == "__main__":
     water_height_history = []
     controller_output_history = []
 
-    for dt in range(20):
+    for dt in range(100):
         water_height_history.append(bathtub_plant.state)
 
         current_height = bathtub_plant.state
