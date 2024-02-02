@@ -9,27 +9,7 @@ class PID:
 
     # inti metode
     def __init__(self, Kp, Ki, Kd, setpoint, dt):
-        """
-        
-        PID parameters: Kp, Ki, Kd
-        Setpoint: desired value
-        dt: delta time
-
-        Proportioal (P): 
-        The proportional response can be adjusted by multiplying the error by a constant known as the Proportional Gain, Kp. 
-        A high Kp will increase the speed of the system response but can lead to an unstable system with overshoot.
-
-        Integral (I):
-        This component is concerned with the accumulation of past errors. 
-        If the error has been present for a prolonged period, the integral term increases, thereby increasing the controller output and driving the error towards zero.
-        : (1 / 100 of P)
-
-        Derivative (D):
-        This component is a prediction of future error, based on its rate of change. 
-        It provides a damping force that reduces overshoot and improves system stability.
-        : (1 x 10 of P)
-
-        """
+      
 
         self.Kp = Kp
         self.Ki = Ki
@@ -40,16 +20,9 @@ class PID:
         self.setpoint = setpoint
         self.dt = dt
 
-        # Når pid controllen setters på antar vi at det ikke er noen feil
         self.last_error = 0
 
     def update(self, current_value):
-        """
-        NOTE: denne metoden oppdaterer PID variabelene
-        error: error value
-        return: PID output (controller signal)
-        """
-
         error = self.setpoint - current_value
         P = self.Kp * error
         self.I += error * self.dt
@@ -57,90 +30,60 @@ class PID:
         self.last_error = error
         return P + (self.Ki * self.I) + (self.Kd * D)
 
-    # def objective(self, setpoint, actual):
-    #     """
-    #     Calculates the mean sqared error
-    #
-    #     :param:
-    #     """
-    #     error = setpoint - actual
-    #     return np.mean(error ** 2)
-
-    # def update_k_values(self, loss_grad, learning_rate):
-    #     """Updates PID gains using gradient descent."""
-    #
-    #     # Unpack gradients
-    #     Kp_grad, Ki_grad, Kd_grad = loss_grad
-    #
-    #     # Update gains with gradient descent
-    #     self.Kp -= learning_rate * Kp_grad
-    #     self.Ki -= learning_rate * Ki_grad
-    #     self.Kd -= learning_rate * Kd_grad
-    #
-    #     return Kp, Ki, Kd
 
     def cost_function(self, setpoint, actual):
-        """Cost function to minimize."""
         error = setpoint - actual
         return jnp.mean(error ** 2)
-
+    
     def update_k_values(self, setpoint, epochs, learning_rate):
-        """Optimize PID gains using gradient descent."""
-        # print(self.cost_function)
         loss_grad = grad(self.cost_function)
-
         for epoch in range(epochs):
             bathtub_plant = bathtub(A=10, C=0.1, H_0=setpoint)
-
-            for _ in range(100):
+            for step in range(100):
                 current_height = bathtub_plant.state
                 controller_output = self.update(current_value=current_height)
                 bathtub_plant.update(U=controller_output, D=disturbance_generator())
 
-            # actual_height = bathtub_plant.state.astype(jnp.float32)  # Convert to float32
-            # setpoint_jax = setpoint.astype(jnp.float32)  # Convert to float32
-
             actual_height = jnp.array(bathtub_plant.state, dtype=jnp.float32)
             setpoint_jax = jnp.array(setpoint, dtype=jnp.float32)
 
-            loss = self.cost_function(setpoint_jax, actual_height)
-            loss_grad_values = loss_grad(setpoint_jax, actual_height)
+            mse = self.cost_function(setpoint_jax, actual_height)
+            grad_value = loss_grad(setpoint_jax, actual_height)
 
-            # Unpack gradients
-            # Kp_grad, Ki_grad, Kd_grad = jnp.ravel(loss_grad_values)
-            Kp_grad, Ki_grad, Kd_grad = jnp.ravel(jnp.reshape(loss_grad_values, (1, -1)))
+            # Update Kp, Ki, and Kd parameters using gradient descent
+            self.Kp -= learning_rate * grad_value[0]  # Update Kp
+            self.Ki -= learning_rate * grad_value[1]  # Update Ki
+            self.Kd -= learning_rate * grad_value[2]  # Update Kd
 
-            # Update gains with gradient descent
-            self.Kp -= learning_rate * Kp_grad
-            self.Ki -= learning_rate * Ki_grad
-            self.Kd -= learning_rate * Kd_grad
-
-            # Visualize progress every 10 epochs
             if epoch % 10 == 0:
-                print(f"Epoch: {epoch}, Loss: {loss}")
+                print(f"Epoch: {epoch}, Loss: {mse}")
 
         return self.Kp, self.Ki, self.Kd
 
-    def visualizePlot(self, output, water_height_history, controller_parameters):
-        Kp, Ki, Kd, dt = controller_parameters
+    def visualizePlot(self, water_height_history, output, controller_parameters, errors_np, heights_np, kp_values, ki_values, kd_values, num_epochs):
 
-        mse_np = np.array(output)
-        fig, axs = plt.subplots(1, 2, figsize=(12, 5))
-        axs[0].plot(mse_np)
-        axs[0].set_xlabel('dt')
-        axs[0].set_ylabel('Controller Output')
-        axs[0].set_title('Controller Output')
-        axs[0].grid(True)
+        fig, axs = plt.subplots(1, 3, figsize=(18, 5))
 
-        # Please add these notes copilot
-        axs[0].text(0.5, 0.9, f'Kp={Kp}, Ki={Ki}, Kd={Kd}, dt={dt}',
-                    fontsize=10, color='red', transform=axs[0].transAxes, bbox=dict(facecolor='white', alpha=0.8))
+        axs[0].plot(errors_np)
+        axs[0].set_xlabel('Epochs')
+        axs[0].set_ylabel('Mean Squared Error')
+        axs[0].set_title('Mean Squared Error Over Time')
+        axs[0].set_xlim(0, num_epochs)
 
-        axs[1].plot(water_height_history)
-        axs[1].set_xlabel('dt')
+        axs[1].plot(heights_np)
+        axs[1].set_xlabel('Epochs')
         axs[1].set_ylabel('Water Height')
-        axs[1].set_title('Water Height')
-        axs[1].grid(True)
+        axs[1].set_title('Water Height Over Time')
+        axs[1].set_xlim(0, num_epochs)
+
+        axs[2].plot(kp_values, label='Kp')
+        axs[2].plot(ki_values, label='Ki')
+        axs[2].plot(kd_values, label='Kd')
+        axs[2].set_xlabel('Epochs')
+        axs[2].set_ylabel('PID Parameters')
+        axs[2].set_title('PID Parameters Over Time')
+        axs[2].set_xlim(0, num_epochs)
+        axs[2].legend()
 
         plt.tight_layout()
         plt.show()
@@ -155,18 +98,16 @@ if __name__ == "__main__":
     epochs = 100
     time_sample = 1
 
-    Kp = 10  # Proposjonal konstanten
+    Kp = 1  # Proposjonal konstanten
     Ki = 2  # Fjerner feil som er konstant
-    Kd = 1.3  # Demper ossilasjon (svingnigner fra v til h)
+    Kd = 1.3  # Demper ossilasjon (svigninger fra v til h)
 
     pid = PID(Kp=Kp, Ki=Ki, Kd=Kd, setpoint=goal_height, dt=time_sample)
 
     # Optimize PID gains
     optimized_Kp, optimized_Ki, optimized_Kd = pid.update_k_values(setpoint=np.array([goal_height]), epochs=100, learning_rate=0.01)
 
-
-
-
+    print(f"Optimized Kp: {optimized_Kp}, Optimized Ki: {optimized_Ki}, Optimized Kd: {optimized_Kd}")
 
     bathtub_plant = bathtub(A=10, C=0.1, H_0=goal_height)
 
@@ -185,66 +126,22 @@ if __name__ == "__main__":
         controller_output_history.append(controller_output)
 
 
-
-
-
-
-
-    # water_height_history = []
-    # controller_output_history = []
-    # # Optimization loop
-    # for _ in range(epochs):
-    #     bathtub_plant = bathtub(A=10, C=0.1, H_0=goal_height)
-    #
-    #     for dt in range(100):
-    #         water_height_history.append(bathtub_plant.state)
-    #
-    #         current_height = bathtub_plant.state
-    #         controller_output = pid.update(current_value=current_height)
-    #         bathtub_plant.update(U=controller_output, D=disturbance_generator())
-    #
-    #         controller_output_history.append(controller_output)
-    #
-    # loss = self.objective()
+    # Calculate errors, heights, and PID parameter values over epochs
+    errors_np = np.array([goal_height - height for height in water_height_history])
+    heights_np = np.array(water_height_history)
+    kp_values = np.array([optimized_Kp] * len(water_height_history))
+    ki_values = np.array([optimized_Ki] * len(water_height_history))
+    kd_values = np.array([optimized_Kd] * len(water_height_history))
+    num_epochs = len(water_height_history)
 
     pid.visualizePlot(
-        output=controller_output_history,
         water_height_history=water_height_history,
-        controller_parameters=(optimized_Kp, optimized_Ki, optimized_Kd, time_sample))
-
-# TODO: Create optimization loop -  simple implementation is already done
-# - > Starting from for _ in range(epochs)
-
-
-# # Optimization loop
-# for _ in range(num_iterations):
-#     # Simulate with current gains
-#     H_sim = ...  # Initialize H_sim
-#     H_prev = H_sim  # Initialize previous state for derivative
-#     for t in range(time_horizon):
-#         U = controller(H_sim, H_desired, Kp, Ki, Kd)
-#         H_sim = step(H_sim, U, D[t])
-#         H_prev = H_sim  # Update previous state for derivative
-
-#     # Evaluate objective function
-#     loss = objective(H_sim, H_desired)
-
-#     # Calculate gradients with JAX
-#     loss_grad = grad(objective)(H_sim, H_desired)
-
-#     # Update gains using optimizer (replace with your chosen algorithm)
-#     Kp, Ki, Kd = update_gains(Kp, Ki, Kd, loss_grad, learning_rate)
-
-
-# # def loss_grad(self, setpoint, actual):
-# #         """Calculates the gradient of the loss function with respect to the PID gains."""
-
-# #         # Calculate error
-# #         error = setpoint - actual
-
-# #         # Calculate gradients
-# #         Kp_grad = np.mean(-2 * error * self.P)
-# #         Ki_grad = np.mean(-2 * error * self.I)
-# #         Kd_grad = np.mean(-2 * error * self.D)
-
-# #         return Kp_grad, Ki_grad, Kd_grad
+        output=controller_output_history,
+        controller_parameters=(optimized_Kp, optimized_Ki, optimized_Kd, time_sample),
+        errors_np=errors_np,
+        heights_np=heights_np,
+        kp_values=kp_values,
+        ki_values=ki_values,
+        kd_values=kd_values,
+        num_epochs=num_epochs
+    )
