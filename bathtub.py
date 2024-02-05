@@ -21,7 +21,7 @@ class bathtub():
 
         self.A = A  # constant does not change
         self.C = C  # constant does not change
-        self.initial_height = H_0
+        self.setpoint = H_0
         self.state = H_0  # Initial height of the water in the bathtub
         self.B = A * H_0  # Initial volume of the bathtub
         self.V = jnp.sqrt(2 * self.g * self.state)  # Initial velocity of the bathtub
@@ -52,4 +52,12 @@ class bathtub():
         This function is used to reset the plant to its initial state
         :return: none
         """
-        self.state = self.initial_height
+        self.state = self.setpoint
+
+    def get_error(self):
+        """
+        This function is used to calculate the error between the setpoint and the current height of the water in the bathtub
+        :return: error
+        """
+        error = self.setpoint - self.state
+        return error

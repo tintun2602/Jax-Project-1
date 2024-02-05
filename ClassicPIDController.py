@@ -1,7 +1,6 @@
 import jax.numpy as np
 from jax import grad, jit
 
-from controllers.Controller import Controller
 
 
 class ClassicPIDController():
