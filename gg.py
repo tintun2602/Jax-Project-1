@@ -3,22 +3,19 @@ import matplotlib.pyplot as plt
 from bathtub import bathtub
 import jax.numpy as jnp
 import jax
-from jax import grad
-
 
 class PID:
 
-    def __init__(self, Kp, Ki, Kd, setpoint, dt):
+    def __init__(self, kp, ki, kd, dt):
         """
         :param Kp: Proportional gain
         :param Ki: Integral gain
         :param Kd: Derivative gain
-        :param setpoint: The desired value
         :param dt: Time step
         """
-        self.Kp = Kp
-        self.Ki = Ki
-        self.Kd = Kd
+        self.kp = kp
+        self.ki = ki
+        self.kd = kd
         self.dt = dt
 
         self.I = 0  # Integral
@@ -29,83 +26,40 @@ class PID:
         self.kd_history = []
 
     def update(self, error):
-        P = self.Kp * error  # Proportional
+        P = self.kp * error  # Proportional
         self.I += error * self.dt
         D = (error - self.last_error) / self.dt  # Derivative
         self.last_error = error
-        return P + (self.Ki * self.I) + (self.Kd * D)
-
-    def cost_function(self, error):
-        return jnp.mean(error ** 2)
-
-    def reset(self):
-        self.I = 0
-        self.last_error = 0
-
-    # def update_k_values(self, epochs, learning_rate):
-    #     differential_loss_fn = partial_derivative(setpoint, num_time_steps, disturbance_generator)
-    #     gradients_loss = jax.grad(differential_loss_fn, argnums=[0, 1, 2])
-    #     gradients_jit = jax.jit(gradients_loss)
-    #     mse_values = []
-    #
-    #     for epoch in range(epochs):
-    #         gradients = gradients_jit(self.Kp, self.Ki, self.Kd)
-    #         self.Kp -= learning_rate * gradients[0]
-    #         self.Ki -= learning_rate * gradients[1]
-    #         self.Kd -= learning_rate * gradients[2]
-    #
-    #         self.kp_history.append(self.Kp)
-    #         self.ki_history.append(self.Ki)
-    #         self.kd_history.append(self.Kd)
-    #
-    #         mse = differential_loss_fn(self.Kp, self.Ki, self.Kd)
-    #         mse_values.append(mse)
-    #
-    #         if epoch % 10 == 0:
-    #             print(f"Epoch: {epoch}, Loss: {mse}")
-    #
-    #     return self.Kp, self.Ki, self.Kd
-    #
+        return P + (self.ki * self.I) + (self.kd * D)
 
 
 
 # TODO: Mortaza: skal endres!
 def make_loss_function(setpoint, time_sample):
-    def calcuate_mse(kp, ki, kd):
+    def loss_fn(kp, ki, kd):
         return calculate_mse(kp, ki, kd, setpoint, time_sample)
-    return calcuate_mse
+    return loss_fn
 
 def calculate_mse(kp, ki, kd, setpoint, time_sample):
     # TODO: fikse dt på en bedre måte
-
-    # kanskje dt er feilen her?
-    controller = PID(kp, ki, kd, setpoint, 1)
+    controller = PID(kp, ki, kd, 1)
     plant = bathtub(A=10, C=0.1, H_0=setpoint)
-    acc_error = 0.0
+    error_history_over_one_epoch = []
 
     for step in range(time_sample):
         noise = disturbance_generator(x1=-0.01, x2=0.01)  # Noise
         error = plant.get_error()
         controller_output = controller.update(error)
         plant.update(U=controller_output, D=noise)
-        error = plant.get_error()
-        acc_error += error ** 2
+        error_history_over_one_epoch.append(error)
 
-
-    mse = acc_error / time_sample
+    squared_errors = jnp.square(jnp.array(error_history_over_one_epoch))
+    mse = jnp.mean(squared_errors)
     print("mean sqaure error: ", mse)
     return mse
 
-
 def disturbance_generator(x1=-0.01, x2=0.01):
     return np.random.uniform(x1, x2)
-
-
-# def partial_derivative(setpoint, num_steps, disturbance_generator):
-#     def loss(kp, ki, kd):
-#         return calculate_mse(setpoint, num_steps)
-#
-#     return loss
 
 
 def run_program():
@@ -113,12 +67,11 @@ def run_program():
     num_epochs = 1000
     num_time_steps = 100
     learning_rate = 0.01
-    pid_params = {"kp": 1.0, "ki": 2.1, "kd": 1.3}
+    pid_params = {"kp": 1.5, "ki": 1.8, "kd": 2.5}
 
     # bathtub
     setpoint = 100  # aka. Initial_height
 
-    # TODO: skal endres
     # Prepare the loss function for gradients
     loss_fn = make_loss_function(setpoint, num_time_steps)
 
@@ -127,15 +80,13 @@ def run_program():
     grad_jit = jax.jit(grad_loss_fn)
 
     mse_history = []
-    kp_values = []
-    ki_values = []
-    kd_values = []
+    kp_history = []
+    ki_history = []
+    kd_history = []
 
     for epoch in range(num_epochs):
         # Compute gradients
         grads = grad_jit(pid_params['kp'], pid_params['ki'], pid_params['kd'])
-
-        print("grads", grads)
 
         # Update PID parameters
         pid_params['kp'] -= learning_rate * grads[0]
@@ -143,28 +94,37 @@ def run_program():
         pid_params['kd'] -= learning_rate * grads[2]
 
         # Store parameter values
-        kp_values.append(pid_params['kp'])
-        ki_values.append(pid_params['ki'])
-        kd_values.append(pid_params['kd'])
+        kp_history.append(pid_params['kp'])
+        ki_history.append(pid_params['ki'])
+        kd_history.append(pid_params['kd'])
 
         # Calculate and store the MSE for this epoch
         mse = loss_fn(pid_params['kp'], pid_params['ki'], pid_params['kd'])
         mse_history.append(mse)
 
-        # Optionally print or log the new parameters and/or loss
-        print(f"Epoch {epoch}: KP={pid_params['kp']}, KI={pid_params['ki']}, KD={pid_params['kd']}, MSE={mse}")
+    # convert to jnp.array
+    kp_history = jnp.array(kp_history)
+    ki_history = jnp.array(ki_history)
+    kd_history = jnp.array(kd_history)
+    mse_history = jnp.array(mse_history)
 
+    plot_results(kp_history, ki_history, kd_history, mse_history)
 
-    # TODO: convert to jax.np array before plotting
-
-
+def plot_results(kp_history, ki_history, kd_history, mse_history):
+    """
+    :param ki_history:
+    :param kd_history:
+    :param kp_history:
+    :param mse_history:
+    :return:
+    """
     # Visualization of PID parameter updates over epochs
     plt.figure(figsize=(12, 6))
 
     plt.subplot(1, 2, 1)
-    plt.plot(kp_values, label='Kp', color='r')
-    plt.plot(ki_values, label='Ki', color='g')
-    plt.plot(kd_values, label='Kd', color='b')
+    plt.plot(kp_history, label='Kp', color='r')
+    plt.plot(ki_history, label='Ki', color='g')
+    plt.plot(kd_history, label='Kd', color='b')
     plt.xlabel('Epoch')
     plt.ylabel('Parameter Value')
     plt.title('PID Parameters Over Epochs')
@@ -179,7 +139,6 @@ def run_program():
 
     plt.grid(True)
     plt.show()
-
 
 if __name__ == "__main__":
    run_program()
