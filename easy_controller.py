@@ -43,29 +43,26 @@ class PID:
         self.I = 0
         self.last_error = 0
 
-    def update_k_values(self, epochs, learning_rate):   
-        differential_loss_fn = partial_derivative(setpoint, num_time_steps, disturbance_generator)
-        gradients_loss = jax.grad(differential_loss_fn, argnums=[0, 1, 2])
-        gradients_jit = jax.jit(gradients_loss)
-        mse_values = []
-        
-        for epoch in range(epochs):
-            gradients = gradients_jit(self.Kp, self.Ki, self.Kd)
-            self.Kp -= learning_rate * gradients[0]
-            self.Ki -= learning_rate * gradients[1]
-            self.Kd -= learning_rate * gradients[2]
 
-            self.kp_history.append(self.Kp)
-            self.ki_history.append(self.Ki)
-            self.kd_history.append(self.Kd)
 
-            mse = differential_loss_fn(self.Kp, self.Ki, self.Kd)
-            mse_values.append(mse)
+def update_k_values(self, epochs, learning_rate):   
+    for epoch in range(epochs):
+        gradients = gradients_jit(self.Kp, self.Ki, self.Kd)
+        self.Kp -= learning_rate * gradients[0]
+        self.Ki -= learning_rate * gradients[1]
+        self.Kd -= learning_rate * gradients[2]
 
-            if epoch % 10 == 0:
-                print(f"Epoch: {epoch}, Loss: {mse}")
+        self.kp_history.append(self.Kp)
+        self.ki_history.append(self.Ki)
+        self.kd_history.append(self.Kd)
 
-        return self.Kp, self.Ki, self.Kd
+        mse = differential_loss_fn(self.Kp, self.Ki, self.Kd)
+        mse_values.append(mse)
+
+        if epoch % 10 == 0:
+            print(f"Epoch: {epoch}, Loss: {mse}")
+
+    return self.Kp, self.Ki, self.Kd
 
 def calculate_mse(self, setpoint, num_steps):
     controller = PID(Kp=self.Kp, Ki=self.Ki, Kd=self.Kd, setpoint=setpoint, dt=self.dt)
