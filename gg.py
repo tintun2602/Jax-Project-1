@@ -76,12 +76,11 @@ def make_loss_function(setpoint, time_sample):
     return calcuate_mse
 
 def calculate_mse(kp, ki, kd, setpoint, time_sample):
-    # TODO: fikse dt på en bedre måte:
+    # TODO: fikse dt på en bedre måte
+
+    # kanskje dt er feilen her?
     controller = PID(kp, ki, kd, setpoint, 1)
-
-    # Reset plant
     plant = bathtub(A=10, C=0.1, H_0=setpoint)
-
     acc_error = 0.0
 
     for step in range(time_sample):
@@ -89,9 +88,12 @@ def calculate_mse(kp, ki, kd, setpoint, time_sample):
         error = plant.get_error()
         controller_output = controller.update(error)
         plant.update(U=controller_output, D=noise)
+        error = plant.get_error()
         acc_error += error ** 2
 
+
     mse = acc_error / time_sample
+    print("mean sqaure error: ", mse)
     return mse
 
 
@@ -99,27 +101,26 @@ def disturbance_generator(x1=-0.01, x2=0.01):
     return np.random.uniform(x1, x2)
 
 
-def partial_derivative(setpoint, num_steps, disturbance_generator):
-    def loss(kp, ki, kd):
-        return calculate_mse(setpoint, num_steps)
-
-    return loss
+# def partial_derivative(setpoint, num_steps, disturbance_generator):
+#     def loss(kp, ki, kd):
+#         return calculate_mse(setpoint, num_steps)
+#
+#     return loss
 
 
 def run_program():
     # Instantiate parameters
-    num_epochs = 100
+    num_epochs = 1000
     num_time_steps = 100
     learning_rate = 0.01
-    time_sample = 1
-    pid_params = {"kp": 1, "ki": 2, "kd": 1.3}
+    pid_params = {"kp": 1.0, "ki": 2.1, "kd": 1.3}
 
     # bathtub
     setpoint = 100  # aka. Initial_height
 
     # TODO: skal endres
     # Prepare the loss function for gradients
-    loss_fn = calculate_mse(setpoint, time_sample)
+    loss_fn = make_loss_function(setpoint, num_time_steps)
 
     # Compute gradients of the loss function w.r.t. PID parameters
     grad_loss_fn = jax.grad(loss_fn, argnums=(0, 1, 2))
@@ -133,6 +134,8 @@ def run_program():
     for epoch in range(num_epochs):
         # Compute gradients
         grads = grad_jit(pid_params['kp'], pid_params['ki'], pid_params['kd'])
+
+        print("grads", grads)
 
         # Update PID parameters
         pid_params['kp'] -= learning_rate * grads[0]
