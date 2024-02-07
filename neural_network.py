@@ -13,6 +13,9 @@ def gen_jaxnet_params(layers=[3, 10, 1]):
 def sigmoid(x):
     return 1 / (1 + jnp.exp(-x))
 
+def relu(x):
+    return jnp.maximum(0, x)
+
 def predict(params, features):
     activations = features
     for weights, biases in params:
