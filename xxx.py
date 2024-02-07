@@ -6,41 +6,49 @@ from bathtub import bathtub
 
 # Feed forward neural network with 5 inputs, 10 hidden nodes, and 5 outputs with JAX
 
-def gen_jaxnet_params(layers=[5, 10, 5]):
-    sender = layers[0]
-    params = []
-    # one set of weights and bases for each non-input layer
-    for receiver in layers[1:]:
-        weights = np.random.uniform(-.1, .1, (sender, receiver))  # Using numpy because this is not traced by jax
-        biases = np.random.uniform(-.1, .1, (1, receiver))
-        sender = receiver
-        params.append([weights, biases])
-    return params
+class NNController:
+    def __init__(self, sizes, key):
+        self.layer_sizes = sizes
+
+    def gen_jaxnet_params(self, layers=[3, 10, 1]):
+        sender = layers[0]
+        params = []
+        # one set of weights and bases for each non-input layer
+        for receiver in layers[1:]:
+            weights = np.random.uniform(-.1, .1, (sender, receiver))  # Using numpy because this is not traced by jax
+            biases = np.random.uniform(-.1, .1, (1, receiver))
+            sender = receiver
+            params.append([weights, biases])
+        return params
 
 
-def jaxnet_loss(params, features, targets):
-    # Make a batched version of the `predict` function.
-    # None => all params used on each call,
-    # 0 => take one row at a time of the cases. vmap = vector map
-    batched_predict = jax.vmap(predict, in_axes=(None, 0))
-    predictions = batched_predict(params, features)
-    print(f"Targets: {targets} and predictions: {predictions}")
-    return jnp.mean(jnp.square(targets - predictions))
+    def predict(self, all_params, features):
+        # nn_forward
+        """Returned activations = the net's output"""
+        activations = features
+        # Feed the features forward through all layers of the net
+        for weights, biases in all_params:
+            activations = self.sigmoid(jnp.dot(activations, weights) + biases)
+
+        return activations
+
+    def sigmoid(self, x):
+        """Activation function"""
+        return 1 / (1 + jnp.exp(-x))
 
 
-def sigmoid(x):
-    """Activation function"""
-    return 1 / (1 + jnp.exp(-x))
+    def jaxnet_loss(self, params, features, targets):
+        # Make a batched version of the `predict` function.
+        # None => all params used on each call,
+        # 0 => take one row at a time of the cases. vmap = vector map
+        batched_predict = jax.vmap(self.predict, in_axes=(None, 0))
+        predictions = batched_predict(params, features)
+        print(f"Targets: {targets} and predictions: {predictions}")
+        return jnp.mean(jnp.square(predictions - targets))
 
 
-def predict(all_params, features):
-    """Returned activations = the net's output"""
-    activations = features
-    # Feed the features forward through all layers of the net
-    for weights, biases in all_params:
-        activations = sigmoid(jnp.dot(activations, weights) + biases)
 
-    return activations
+
 
 
 def jaxnet_train_one_epoch(params, features, targets, lrate=0.1):
@@ -88,7 +96,11 @@ def generate_data_cases(ncases=1000):
 
 
 def jaxrun(epochs, ncases, layer_sizes, lrate=0.03):
-    features, targets = generate_data_cases(ncases)
+    # features, targets = generate_data_cases(ncases)
+    # features should be PID
+
+
+
     params = gen_jaxnet_params(layer_sizes)
     jaxnet_train(params, features, targets, epochs, lrate=lrate)
 
@@ -96,6 +108,8 @@ def jaxrun(epochs, ncases, layer_sizes, lrate=0.03):
 if __name__ == "__main__":
     epochs = 100
     ncases = 1000
-    layer_sizes = [5, 10, 5]
     lrate = 0.03
+    layer_sizes = [3, 10, 1]
     jaxrun(epochs, ncases, layer_sizes, lrate=lrate)
+
+
