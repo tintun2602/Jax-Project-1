@@ -85,12 +85,21 @@ def simulate_and_train_bathtub(params, key, epochs=100, steps_per_epoch=100, tar
             D = random.uniform(subkey, shape=(), minval=-0.01, maxval=0.01)
             bathtub.update_state(control_signal[0], D)
 
+
+            print(f"${error_history} ${error}")
             error_history.append([error])
+
+
 
         # Convert list of lists (or list of JAX arrays) to a JAX array
         features = jnp.array([jnp.array(e).reshape(1,) for e in error_history]).reshape(-1, 1)
 
+        print(f"features: {features}")
+
         targets = jnp.array(control_signal_history).reshape(-1, 1)
+
+        print(f"targets: {targets}")
+
         params, mse = jaxnet_train_one_epoch(params, features, targets, lrate=0.2)
         mse_history.append(mse)
 
