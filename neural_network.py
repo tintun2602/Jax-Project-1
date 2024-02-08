@@ -75,7 +75,7 @@ class neural_network:
             D = disturbance_generator()  # Generate a random disturbance
             # Apply the control signal to the plant
             # plant.update_state(control_signal, D, dt)  # Assuming no external disturbance (D=0)
-            plant.update_state(control_signal, D)
+            plant.update_state(control_signal, D)  # dt is always 1
             # Optional: Track performance over time
             error_history.append(error)
             control_signal_history.append(control_signal)

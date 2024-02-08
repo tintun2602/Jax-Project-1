@@ -27,7 +27,10 @@ class BathtubPlant:
     def get_state(self):
         return self.water_level
 
-    def update_state(self, control_signal, D, dt):
+    def update_state(self, control_signal, D, dt=1):
+        """
+        :param dt: dt is 1 sec
+        """
         self.V = jnp.sqrt(2 * self.g * self.water_level)
         self.Q = self.V * self.C
         delta_B = (control_signal + D - self.Q) * dt

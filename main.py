@@ -46,10 +46,18 @@ if __name__ == "__main__":
     initial_level = 1.0  # Initial water level in meters
     area = 10.0  # Cross-sectional area of the bathtub in square meters
     drain_area = 0.1  # Area of the drain in square meters
+
+
+    """
+    For Bathtub Plant include Dt
     
+    For CournotCompetition exclude Dt
+    For CournotCompetition exclude Dt
     
-    # plant = BathtubPlant(initial_level, area, drain_area)
-    plant = CournotCompetition(1.0, 5.0, 1.0)
+    """
+    
+    #plant = BathtubPlant(initial_level, area, drain_area, ) # Includes Dt
+    plant = CournotCompetition(1.0, 5.0, 1.0) # Exclude Dt
     features, targets = generate_pid_training_data(1.0, n_samples=1000)  # Example setpoint and samples
     
 
