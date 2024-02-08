@@ -1,20 +1,26 @@
 import jax.numpy as jnp
 
+
 class CournotCompetition:
-    def __init__(self, initial_production, p_max, rival_production):
+    def __init__(self, initial_production, p_max, rival_production, cost_production):
         self.q1 = max(initial_production, 0)
         self.p_max = p_max
         self.q2 = rival_production
+        self.cost_production = cost_production
+        self.initial_production = initial_production
 
     def get_state(self):
         total_production = self.q1 + self.q2
         price = self.p_max - total_production
-        profit = self.q1 * price
+        profit = self.q1 * price - (self.q1 * self.cost_production)
         return profit
 
-    def update_state(self, control_signal, dt):
-        self.q1 += control_signal * dt
+    def update_state(self, control_signal, noise):
+        self.q2 = self.q2 + noise
+        self.q1 += control_signal
 
+    def get_error(self):
+        return self.initial_production - self.q1
 
 
 class BathtubPlant:
@@ -44,14 +50,17 @@ class BathtubPlant:
     def get_error(self):
         return self.initial_height - self.water_level
 
+
 import jax.numpy as jnp
+
 
 class TemperatureControlPlant:
     def __init__(self, initial_temp, external_temp, insulation_quality, heating_efficiency):
         """
         Initializes the temperature control model.
 
-        :param initial_temp: Initial temperature of the room (degrees Celsius).
+        :param initial_temp: Initial temperature of the room (degrees Celsius). This is also the setpoint / goal state
+
         :param external_temp: External temperature outside the room (degrees Celsius).
         :param insulation_quality: A factor representing the insulation quality of the room,
                                    higher means better insulation (unitless).
@@ -62,6 +71,7 @@ class TemperatureControlPlant:
         self.external_temp = external_temp
         self.insulation_quality = insulation_quality
         self.heating_efficiency = heating_efficiency
+        self.initial_temp = initial_temp
 
     def get_state(self):
         """
@@ -69,6 +79,7 @@ class TemperatureControlPlant:
         """
         return self.room_temp
 
+    # TODO: har funk integral??
     def update_state(self, control_signal, dt):
         """
         Updates the room's temperature based on the heating/cooling control signal and the
@@ -86,3 +97,6 @@ class TemperatureControlPlant:
 
         # Update the room temperature
         self.room_temp += temp_change_due_to_hvac + temp_change_due_to_external
+
+    def get_error(self):
+        return self.initial_temp - self.room_temp

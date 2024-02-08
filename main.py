@@ -57,11 +57,8 @@ if __name__ == "__main__":
     # Initializing plants
 
     # plant = BathtubPlant(initial_level, area, drain_area, ) # Includes Dt
-    plant = CournotCompetition(1.0, 5.0, 1.0) # Exclude Dt
-    # plant = TemperatureControlPlant(initial_temp=20.0,  # Initial room temperature in degrees Celsius
-    #                                 external_temp=10.0,  # External temperature in degrees Celsius
-    #                                 insulation_quality=10.0,  # Insulation quality factor
-    #                                 heating_efficiency=0.1)
+    # plant = CournotCompetition(1.0, 5.0, 1.0, 0.02) # Exclude Dt
+    plant = TemperatureControlPlant(initial_temp=20.0, external_temp=10.0,  insulation_quality=10.0, heating_efficiency=0.1)
 
 
 
