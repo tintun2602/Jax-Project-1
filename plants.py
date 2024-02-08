@@ -1,6 +1,5 @@
 import jax.numpy as jnp
 
-
 class CournotCompetition:
     def __init__(self, initial_production, p_max, rival_production, cost_production):
         self.q1 = max(initial_production, 0)
@@ -50,8 +49,6 @@ class BathtubPlant:
     def get_error(self):
         return self.initial_height - self.water_level
 
-
-import jax.numpy as jnp
 
 
 class TemperatureControlPlant:
