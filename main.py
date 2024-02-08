@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from neural_network import neural_network
-from plants import BathtubPlant, CournotCompetition
+from plants import BathtubPlant, CournotCompetition, TemperatureControlPlant
 from utils import disturbance_generator
 
 
@@ -55,9 +55,17 @@ if __name__ == "__main__":
     For CournotCompetition exclude Dt
     
     """
-    
+
+    # Initializing plants
+
     #plant = BathtubPlant(initial_level, area, drain_area, ) # Includes Dt
-    plant = CournotCompetition(1.0, 5.0, 1.0) # Exclude Dt
+    #plant = CournotCompetition(1.0, 5.0, 1.0) # Exclude Dt
+    plant = TemperatureControlPlant(initial_temp=20.0,  # Initial room temperature in degrees Celsius
+                                    external_temp=10.0,  # External temperature in degrees Celsius
+                                    insulation_quality=10.0,  # Insulation quality factor
+                                    heating_efficiency=0.1)
+
+
     features, targets = generate_pid_training_data(1.0, n_samples=1000)  # Example setpoint and samples
     
 

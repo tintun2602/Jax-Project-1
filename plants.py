@@ -39,3 +39,46 @@ class BathtubPlant:
 
     def reset(self):
         self.water_level = self.initial_height
+
+import jax.numpy as jnp
+
+class TemperatureControlPlant:
+    def __init__(self, initial_temp, external_temp, insulation_quality, heating_efficiency):
+        """
+        Initializes the temperature control model.
+
+        :param initial_temp: Initial temperature of the room (degrees Celsius).
+        :param external_temp: External temperature outside the room (degrees Celsius).
+        :param insulation_quality: A factor representing the insulation quality of the room,
+                                   higher means better insulation (unitless).
+        :param heating_efficiency: Efficiency of the heating/cooling system (degrees Celsius
+                                   change per unit of control signal).
+        """
+        self.room_temp = initial_temp
+        self.external_temp = external_temp
+        self.insulation_quality = insulation_quality
+        self.heating_efficiency = heating_efficiency
+
+    def get_state(self):
+        """
+        Returns the current temperature of the room.
+        """
+        return self.room_temp
+
+    def update_state(self, control_signal, dt):
+        """
+        Updates the room's temperature based on the heating/cooling control signal and the
+        external environment over a time step.
+
+        :param control_signal: Control signal for the heating/cooling system. Positive for heating,
+                               negative for cooling.
+        :param dt: Time step over which to apply the control signal (in seconds).
+        """
+        # Compute the effect of heating/cooling
+        temp_change_due_to_hvac = control_signal * self.heating_efficiency * dt
+
+        # Compute the effect of external temperature
+        temp_change_due_to_external = (self.external_temp - self.room_temp) / self.insulation_quality * dt
+
+        # Update the room temperature
+        self.room_temp += temp_change_due_to_hvac + temp_change_due_to_external
