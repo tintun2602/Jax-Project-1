@@ -16,6 +16,7 @@ class CournotCompetition:
         self.q1 += control_signal * dt
 
 
+
 class BathtubPlant:
     def __init__(self, initial_level, area, drain_area, g=9.8):
         self.water_level = initial_level
@@ -37,8 +38,11 @@ class BathtubPlant:
         delta_H = delta_B / self.A
         self.water_level += delta_H
 
-    def reset(self):
+    def reset_state(self):
         self.water_level = self.initial_height
+
+    def get_error(self):
+        return self.initial_height - self.water_level
 
 import jax.numpy as jnp
 

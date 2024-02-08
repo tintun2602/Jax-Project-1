@@ -2,13 +2,14 @@ import numpy as np
 import jax
 import jax.numpy as jnp
 
-from utils import disturbance_generator
+from utils import disturbance_generator, PIDErrorCalculator
+
+pid_error_calculator = PIDErrorCalculator()
 
 
 class neural_network:
     def __init__(self, layers=[3, 10, 1]):
         self.layers = layers
-
 
     def gen_jaxnet_params(self):
         params = []
@@ -18,7 +19,7 @@ class neural_network:
             params.append([weights, biases])
         return params
 
-    def sigmoid(self,x):
+    def sigmoid(self, x):
         return 1 / (1 + jnp.exp(-x))
 
     def relu(self, x):
@@ -33,21 +34,24 @@ class neural_network:
             activations = self.tanh(jnp.dot(activations, weights) + biases)
         return activations
 
-    def jaxnet_loss(self, params, features, targets):
+    def jaxnet_loss(self, params, features):
         predictions = self.predict(params, features)
-        return jnp.mean(jnp.square(targets - predictions))
+        return jnp.mean(jnp.square(predictions))
 
-    def jaxnet_train_one_epoch(self, params, features, targets, lrate=0.1):
-        mse, gradients = jax.value_and_grad(self.jaxnet_loss)(params, features, targets)
+    def jaxnet_train_one_epoch(self, params, features, lrate=0.1):
+        mse, gradients = jax.value_and_grad(self.jaxnet_loss)(params, features)
         new_params = [(w - lrate * dw, b - lrate * db) for (w, b), (dw, db) in zip(params, gradients)]
         return new_params, mse
 
-    def train_neural_network(self, features, targets, epochs=100, lrate=0.1):
+    def train_neural_network(self, plant, epochs=100, lrate=0.1):
+        print(plant)
         params = self.gen_jaxnet_params()  # PID features to control action
         mse_history = []  # To store MSE for plotting
 
         for epoch in range(epochs):
-            params, mse = self.jaxnet_train_one_epoch(params, features, targets, lrate)
+            # plant = plant.reset_state()
+            features = jnp.array(pid_error_calculator.calculate_errors(plant.get_error())).reshape(1, -1)
+            params, mse = self.jaxnet_train_one_epoch(params, features, lrate)
             mse_history.append(mse)
             print(f'Epoch {epoch}, MSE: {mse}')
 
@@ -65,7 +69,7 @@ class neural_network:
             error = setpoint - current_level
             integral_error += error * dt  # Update integral of error
             derivative_error = (
-                                           error - prev_error) / dt if prev_error is not None else 0.0  # Calculate derivative of error
+                                       error - prev_error) / dt if prev_error is not None else 0.0  # Calculate derivative of error
             prev_error = error  # Update previous error for next iteration
 
             # Use the neural network to predict the control action
